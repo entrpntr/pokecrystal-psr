@@ -778,42 +778,68 @@ LoadBluePage:
 	ret
 
 .PlaceOTInfo:
-	ld de, IDNoString
+	ld de, TextboxesString
+	hlcoord 0, 15
+	call PlaceString
+	lb bc, PRINTNUM_LEFTALIGN | 1, 3
+	ld de, hLog + 2
+	ld a, [hLogCount]
+	and $1
+	jr z, .skip
+	inc de
+
+.skip
+	hlcoord 2, 16
+	call PrintNum
+	inc de
+	hlcoord 6, 16
+	call PrintNum
+	inc de
+	hlcoord 2, 17
+	call PrintNum
+	inc de
+	hlcoord 6, 17
+	call PrintNum
+	ld de, FrameString
 	hlcoord 0, 9
 	call PlaceString
-	ld de, OTString
+	ld de, DVsString
 	hlcoord 0, 12
 	call PlaceString
+	ldh a, [hContinueFrame]
+	sub 149 ; hContinueFrame=149 when frame perfect
+	ld [wContinueFrameBuffer], a
 	hlcoord 2, 10
-	lb bc, PRINTNUM_LEADINGZEROS | 2, 5
-	ld de, wTempMonID
+	lb bc, PRINTNUM_LEFTALIGN | 1, 3
+	ld de, wContinueFrameBuffer
 	call PrintNum
-	ld hl, .OTNamePointers
-	call GetNicknamenamePointer
-	call CopyNickname
-	farcall CorrectNickErrors
 	hlcoord 2, 13
-	call PlaceString
-	ld a, [wTempMonCaughtGender]
-	and a
-	jr z, .done
-	cp $7f
-	jr z, .done
-	and CAUGHT_GENDER_MASK
-	ld a, "♂"
-	jr z, .got_gender
-	ld a, "♀"
-.got_gender
-	hlcoord 9, 13
-	ld [hl], a
-.done
+	ld a, [wTempMonDVs]
+	call .PlaceHex
+	ld a, [wTempMonDVs + 1]
+
+.PlaceHex:
+	ld b, a
+	swap a
+	and $f
+	add "0"
+	or "A"
+	ld [hli], a
+	ld a, b
+	and $f
+	add "0"
+	or "A"
+	ld [hli], a
 	ret
 
-.OTNamePointers:
-	dw wPartyMonOTs
-	dw wOTPartyMonOTs
-	dw sBoxMonOTs
-	dw wBufferMonOT
+TextboxesString:
+	db "TEXTBOXES/@"
+
+FrameString:
+	db "FRAME/@"
+
+DVsString:
+	db "DVs/@"
 
 IDNoString:
 	db "<ID>№.@"

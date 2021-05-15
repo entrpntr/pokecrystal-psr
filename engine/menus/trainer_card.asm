@@ -111,7 +111,7 @@ TrainerCard_Page1_LoadGFX:
 	ld hl, vTiles2 tile $29
 	lb bc, BANK(CardStatusGFX), 86
 	call Request2bpp
-	call TrainerCard_Page1_PrintDexCaught_GameTime
+	call TrainerCard_Page1_PrintStatus
 	call TrainerCard_IncrementJumptable
 	ret
 
@@ -142,21 +142,15 @@ TrainerCard_Page2_LoadGFX:
 	ld d, 6
 	call TrainerCard_InitBorder
 	call WaitBGMap
-	ld de, LeaderGFX
+	ld de, CardStatusGFX
 	ld hl, vTiles2 tile $29
-	lb bc, BANK(LeaderGFX), 86
+	lb bc, BANK(CardStatusGFX), 86
 	call Request2bpp
-	ld de, BadgeGFX
-	ld hl, vTiles0 tile $00
-	lb bc, BANK(BadgeGFX), 44
-	call Request2bpp
-	call TrainerCard_Page2_3_InitObjectsAndStrings
+	call TrainerCard_Page2_PrintStatus
 	call TrainerCard_IncrementJumptable
 	ret
 
 TrainerCard_Page2_Joypad:
-	ld hl, TrainerCard_JohtoBadgesOAM
-	call TrainerCard_Page2_3_AnimateBadges
 	ld hl, hJoyLast
 	ld a, [hl]
 	and A_BUTTON
@@ -231,14 +225,21 @@ TrainerCard_PrintTopHalfOfCard:
 	hlcoord 2, 2
 	ld de, .Name_Money
 	call PlaceString
-	hlcoord 2, 4
-	ld de, .ID_No
-	call TrainerCardSetup_PlaceTilemapString
 	hlcoord 7, 2
 	ld de, wPlayerName
 	call PlaceString
-	hlcoord 5, 4
+	hlcoord 2, 4
+	ld de, .TID
+	call PlaceString
+	hlcoord 9, 4
 	ld de, wPlayerID
+	lb bc, PRINTNUM_LEADINGZEROS | 2, 5
+	call PrintNum
+	hlcoord 2, 5
+	ld de, .LID
+	call PlaceString
+	hlcoord 9, 5
+	ld de, wLuckyIDNumber
 	lb bc, PRINTNUM_LEADINGZEROS | 2, 5
 	call PrintNum
 	hlcoord 7, 6
@@ -260,49 +261,138 @@ TrainerCard_PrintTopHalfOfCard:
 	next ""
 	next "MONEY@"
 
-.ID_No:
-	db $27, $28, -1 ; ID NO
+.TID
+	db "TID@"
+
+.LID
+	db "LID@"
 
 .HorizontalDivider:
 	db $25, $25, $25, $25, $25, $25, $25, $25, $25, $25, $25, $25, $26, -1 ; ____________>
 
-TrainerCard_Page1_PrintDexCaught_GameTime:
-	hlcoord 2, 10
-	ld de, .Dex_PlayTime
-	call PlaceString
-	hlcoord 10, 15
-	ld de, .Badges
-	call PlaceString
-	ld hl, wPokedexCaught
-	ld b, wEndPokedexCaught - wPokedexCaught
-	call CountSetBits
-	ld de, wNumSetBits
-	hlcoord 15, 10
-	lb bc, 1, 3
-	call PrintNum
-	call TrainerCard_Page1_PrintGameTime
+TrainerCard_Page1_PrintStatus:
 	hlcoord 2, 8
 	ld de, .StatusTilemap
 	call TrainerCardSetup_PlaceTilemapString
-	ld a, [wStatusFlags]
-	bit STATUSFLAGS_POKEDEX_F, a
-	ret nz
-	hlcoord 1, 9
-	lb bc, 2, 17
-	call ClearBox
+	hlcoord 2, 10
+	ld de, .RTC
+	call PlaceString
+	hlcoord 2, 11
+	ld de, .IGT
+	call PlaceString
+	ld a, $2e ; colon
+	hlcoord 12, 10
+	ld [hl], a
+	hlcoord 15, 10
+	ld [hl], a
+	hlcoord 12, 11
+	ld [hl], a
+	hlcoord 15, 11
+	ld [hl], a
+	call TrainerCard_Page1_PrintGameTime
+	hlcoord 2, 12
+	ld de, .Steps
+	call PlaceString
+	hlcoord 15, 12
+	ld de, wStepCount
+	lb bc, 1, 3
+	call PrintNum
+	hlcoord 2, 13
+	ld de, .PSN_Steps
+	call PlaceString
+	hlcoord 15, 13
+	ld de, wPoisonStepCount
+	lb bc, 1, 3
+	call PrintNum
+	hlcoord 3, 15
+	ld de, .Live
+	call PlaceString
+	hlcoord 14, 15
+	ld de, .Save
+	call PlaceString
 	ret
 
-.Dex_PlayTime:
-	db   "#DEX"
-	next "PLAY TIME@"
+.RTC
+	db "RTC@"
 
-.Unused: ; unreferenced
-	db "@"
+.IGT
+	db "IGT@"
 
-.Badges:
-	db "  BADGES▶@"
+.Steps
+	db "STEPS@"
 
-.StatusTilemap:
+.PSN_Steps
+	db "PSN STEPS@"
+
+.Live
+	db "LIVE@"
+
+.Save
+	db "SAVE▶@"
+
+.StatusTilemap
+	db $29, $2a, $2b, $2c, $2d, -1
+
+TrainerCard_Page2_PrintStatus:
+	ld a, BANK("Save")
+	call OpenSRAM ; what is now OpenSRAM.valid was actually called before
+	hlcoord 2, 8
+	ld de, .StatusTilemap
+	call TrainerCardSetup_PlaceTilemapString
+	hlcoord 2, 10
+	ld de, .RTC
+	call PlaceString
+	hlcoord 2, 11
+	ld de, .IGT
+	call PlaceString
+	ld a, $2e ; colon
+	hlcoord 9, 10
+	ld [hl], a
+	hlcoord 12, 10
+	ld [hl], a
+	hlcoord 9, 11
+	ld [hl], a
+	hlcoord 12, 11
+	ld [hl], a
+	hlcoord 15, 11
+	ld [hl], a
+	call TrainerCard_Page2_PrintGameTime
+	hlcoord 2, 12
+	ld de, .Steps
+	call PlaceString
+	hlcoord 15, 12
+	ld de, sPlayerData + (wStepCount - wPlayerData)
+	lb bc, 1, 3
+	call PrintNum
+	hlcoord 2, 13
+	ld de, .PSN_Steps
+	call PlaceString
+	hlcoord 15, 13
+	ld de, sPlayerData + (wPoisonStepCount - wPlayerData)
+	lb bc, 1, 3
+	call PrintNum
+	hlcoord 3, 15
+	ld de, .Save
+	call PlaceString
+	;call CloseSRAM
+	ret
+
+.RTC
+	db "RTC@"
+
+.IGT
+	db "IGT@"
+
+.Steps
+	db "STEPS@"
+
+.PSN_Steps
+	db "PSN STEPS@"
+
+.Save
+	db "SAVE@"
+
+.StatusTilemap
 	db $29, $2a, $2b, $2c, $2d, -1
 
 TrainerCard_Page2_3_InitObjectsAndStrings:
@@ -442,7 +532,19 @@ TrainerCard_Page2_3_PlaceLeadersFaces:
 	ret
 
 TrainerCard_Page1_PrintGameTime:
-	hlcoord 11, 12
+	hlcoord 9, 10
+	ld de, hRTCHours
+	lb bc, 1, 3
+	call PrintNum
+	inc hl
+	ld de, hRTCMinutes
+	lb bc, PRINTNUM_LEADINGZEROS | 1, 2
+	call PrintNum
+	inc hl
+	ld de, hRTCSeconds
+	lb bc, PRINTNUM_LEADINGZEROS | 1, 2
+	call PrintNum
+	hlcoord 8, 11
 	ld de, wGameTimeHours
 	lb bc, 2, 4
 	call PrintNum
@@ -450,13 +552,41 @@ TrainerCard_Page1_PrintGameTime:
 	ld de, wGameTimeMinutes
 	lb bc, PRINTNUM_LEADINGZEROS | 1, 2
 	call PrintNum
-	ldh a, [hVBlankCounter]
-	and $1f
-	ret nz
-	hlcoord 15, 12
-	ld a, [hl]
-	xor " " ^ $2e ; alternate between space and small colon ($2e) tiles
-	ld [hl], a
+	inc hl
+	ld de, wGameTimeSeconds
+	lb bc, PRINTNUM_LEADINGZEROS | 1, 2
+	call PrintNum
+	ret
+
+TrainerCard_Page2_PrintGameTime:
+	hlcoord 6, 10
+	ld de, sPlayerData + (wStartHour - wPlayerData)
+	lb bc, 1, 3
+	call PrintNum
+	inc hl
+	ld de, sPlayerData + (wStartMinute - wPlayerData)
+	lb bc, PRINTNUM_LEADINGZEROS | 1, 2
+	call PrintNum
+	inc hl
+	ld de, sPlayerData + (wStartSecond - wPlayerData)
+	lb bc, PRINTNUM_LEADINGZEROS | 1, 2
+	call PrintNum
+	hlcoord 5, 11
+	ld de, sPlayerData + (wGameTimeHours - wPlayerData)
+	lb bc, 2, 4
+	call PrintNum
+	inc hl
+	ld de, sPlayerData + (wGameTimeMinutes - wPlayerData)
+	lb bc, PRINTNUM_LEADINGZEROS | 1, 2
+	call PrintNum
+	inc hl
+	ld de, sPlayerData + (wGameTimeSeconds - wPlayerData)
+	lb bc, PRINTNUM_LEADINGZEROS | 1, 2
+	call PrintNum
+	inc hl
+	ld de, sPlayerData + (wGameTimeFrames - wPlayerData)
+	lb bc, PRINTNUM_LEADINGZEROS | 1, 2
+	call PrintNum
 	ret
 
 TrainerCard_Page2_3_AnimateBadges:

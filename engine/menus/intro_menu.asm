@@ -1178,9 +1178,9 @@ TitleScreenMain:
 	cp  D_DOWN + B_BUTTON + SELECT
 	jr nz, .check_start
 
-	ld a, $34
+	ld a, 0
 	ldh [hClockResetTrigger], a
-	jr .check_start
+	jr .reset_clock
 
 ; Keep Select pressed, and hold Left + Up.
 ; Then let go of Select.

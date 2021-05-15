@@ -690,17 +690,16 @@ JumpRoamMons:
 	ld [wRoamMon2MapNumber], a
 
 .SkipEntei:
-	ld a, [wRoamMon3MapGroup]
+	ld a, [hVBlankCounter]
 	cp GROUP_N_A
-	jr z, .Finished
+	ldh [hContinueFrame], a
+	jp _BackUpMapIndices
+; skipped
 	call JumpRoamMon
 	ld a, b
 	ld [wRoamMon3MapGroup], a
 	ld a, c
 	ld [wRoamMon3MapNumber], a
-
-.Finished:
-	jp _BackUpMapIndices
 
 JumpRoamMon:
 .loop

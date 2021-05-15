@@ -249,25 +249,11 @@ DidntChooseStarterScript:
 
 ElmDirectionsScript:
 	turnobject PLAYER, UP
-	opentext
-	writetext ElmDirectionsText1
-	waitbutton
-	closetext
 	addcellnum PHONE_ELM
 	opentext
 	writetext GotElmsNumberText
 	playsound SFX_REGISTER_PHONE_NUMBER
 	waitsfx
-	waitbutton
-	closetext
-	turnobject ELMSLAB_ELM, LEFT
-	opentext
-	writetext ElmDirectionsText2
-	waitbutton
-	closetext
-	turnobject ELMSLAB_ELM, DOWN
-	opentext
-	writetext ElmDirectionsText3
 	waitbutton
 	closetext
 	setevent EVENT_GOT_A_POKEMON_FROM_ELM

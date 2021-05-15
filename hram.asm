@@ -175,4 +175,7 @@ hDebugRoomMenuPage::
 endc
 hClockResetTrigger:: db
 
-	ds 19
+hContinueFrame:: db ; ffec
+hLogReq:: db ; ffed
+hLogCount:: db ; ffee
+hLog:: ds 16 ; ffef

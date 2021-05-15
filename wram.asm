@@ -2469,6 +2469,7 @@ wd1f3:: ds 1
 
 NEXTU
 ; miscellaneous bytes
+wContinueFrameBuffer::
 wSkipMovesBeforeLevelUp::
 wRegisteredPhoneNumbers::
 wListMovesLineSpacing:: db

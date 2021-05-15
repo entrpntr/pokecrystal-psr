@@ -1,10 +1,3 @@
-Joypad::
-; Replaced by UpdateJoypad, called from VBlank instead of the useless
-; joypad interrupt.
-
-; This is a placeholder in case the interrupt is somehow enabled.
-	reti
-
 ClearJoypad::
 	xor a
 ; Pressed this frame (delta)
@@ -36,40 +29,35 @@ UpdateJoypad::
 	and a
 	ret nz
 
-; We can only get four inputs at a time.
-; We take d-pad first for no particular reason.
-	ld a, R_DPAD
-	ldh [rJOYP], a
-; Read twice to give the request time to take.
-	ldh a, [rJOYP]
-	ldh a, [rJOYP]
+	ldh a, [hLogReq]
+	and a
+	ldh a, [hLogCount]
+	jr z, .skip
+	inc a
 
-; The Joypad register output is in the lo nybble (inversed).
-; We make the hi nybble of our new container d-pad input.
-	cpl
+.skip
+	and $f
+	ldh [hLogCount], a
+	add LOW(hLog)
+	ld c, a
+	ldh a, [hVBlankCounter]
+	ld [c], a
+	xor a
+	ldh [hLogReq], a
+	ld c, a
+	ld a, R_DPAD
+	ld [c], a
+	ld a, [c]
 	and $f
 	swap a
-
-; We'll keep this in b for now.
 	ld b, a
-
-; Buttons make 8 total inputs (A, B, Select, Start).
-; We can fit this into one byte.
 	ld a, R_BUTTONS
-	ldh [rJOYP], a
-; Wait for input to stabilize.
-rept 6
-	ldh a, [rJOYP]
-endr
-; Buttons take the lo nybble.
-	cpl
+	ld [c], a
+	ld a, [c]
 	and $f
 	or b
+	cpl
 	ld b, a
-
-; Reset the joypad register since we're done with it.
-	ld a, $30
-	ldh [rJOYP], a
 
 ; To get the delta we xor the last frame's input with the new one.
 	ldh a, [hJoypadDown] ; last frame
@@ -315,11 +303,19 @@ JoyTextDelay::
 	ldh a, [hInMenu]
 	and a
 	ldh a, [hJoyPressed]
-	jr z, .ok
+	jr z, .notinmenu
 	ldh a, [hJoyDown]
-.ok
 	ldh [hJoyLast], a
 	ldh a, [hJoyPressed]
+	and a
+	jr z, .checkframedelay
+	ld a, 15
+	ld [wTextDelayFrames], a
+	ret
+
+.notinmenu
+	ldh [hJoyLast], a
+	ldh [hLogReq], a
 	and a
 	jr z, .checkframedelay
 	ld a, 15
