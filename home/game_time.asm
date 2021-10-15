@@ -1,4 +1,13 @@
 ResetGameTime::
+IF DEF(IGT_AS_RTC)
+	xor a
+	ld [wGameTimeHours], a
+	ld [wGameTimeHours + 1], a
+	ld [wGameTimeSeconds], a
+	ld [wGameTimeFrames], a
+	ld a, [$0003] ; [$0003] = 1
+	ld [wGameTimeMinutes], a
+ELSE
 	xor a
 	ld [wGameTimeCap], a
 	ld [wGameTimeHours], a
@@ -6,6 +15,7 @@ ResetGameTime::
 	ld [wGameTimeMinutes], a
 	ld [wGameTimeSeconds], a
 	ld [wGameTimeFrames], a
+ENDC
 	ret
 
 GameTimer::

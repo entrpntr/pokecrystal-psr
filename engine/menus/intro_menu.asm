@@ -1353,11 +1353,21 @@ GameInit::
 	call ClearTilemap
 	ld a, HIGH(vBGMap0)
 	ldh [hBGMapAddress + 1], a
+IF DEF(INTRO_SKIP) ; skips intro sequence on resets after first boot
+	ldh a, [hSystemBooted]
+	and a
+	jp z, Intro_MainMenu
+	xor a ; FALSE
+	ldh [hSystemBooted], a
+	nop
+	nop
+ELSE
 	xor a ; LOW(vBGMap0)
 	ldh [hBGMapAddress], a
 	ldh [hJoyDown], a
 	ldh [hSCX], a
 	ldh [hSCY], a
+ENDC
 	ld a, $90
 	ldh [hWY], a
 	call WaitBGMap

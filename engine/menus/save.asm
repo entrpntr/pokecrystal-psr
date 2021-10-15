@@ -634,6 +634,12 @@ TryLoadSaveData:
 	ld de, wStartDay
 	ld bc, 8
 	call CopyBytes
+IF DEF(IGT_AS_RTC)
+	ld hl, sPlayerData + (wGameTimeHours + 1) - wPlayerData
+	ld de, wGameTimeHours + 1
+	ld bc, 3
+	call CopyBytes
+ENDC
 	ld hl, sPlayerData + wStatusFlags - wPlayerData
 	ld de, wStatusFlags
 	ld a, [hl]

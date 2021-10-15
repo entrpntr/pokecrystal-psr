@@ -15,10 +15,17 @@ StartRTC:
 	ld [MBC3SRamEnable], a
 	call LatchClock
 	ld a, RTC_DH
+IF DEF(IGT_AS_RTC)
+	ld [hUnusedByte], a
+	ld a, [hUnusedByte]
+	res 6, a ; halt
+	ld [hUnusedByte], a
+ELSE
 	ld [MBC3SRamBank], a
 	ld a, [MBC3RTC]
 	res 6, a ; halt
 	ld [MBC3RTC], a
+ENDC
 	call CloseSRAM
 	ret
 

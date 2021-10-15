@@ -36,29 +36,50 @@ GetClock::
 ; clock data is 'backwards' in hram
 
 	call LatchClock
+IF DEF(IGT_AS_RTC)
+	ld hl, hUnusedByte
+	ld de, hUnusedByte
+	ld de, wGameTimeSeconds
+ELSE
 	ld hl, MBC3SRamBank
 	ld de, MBC3RTC
-
 	ld [hl], RTC_S
+ENDC
 	ld a, [de]
 	maskbits 60
 	ldh [hRTCSeconds], a
 
+IF DEF(IGT_AS_RTC)
+	ld de, wGameTimeMinutes
+ELSE
 	ld [hl], RTC_M
+ENDC
 	ld a, [de]
 	maskbits 60
 	ldh [hRTCMinutes], a
 
+IF DEF(IGT_AS_RTC)
+	ld de, wGameTimeHours + 1
+ELSE
 	ld [hl], RTC_H
+ENDC
 	ld a, [de]
 	maskbits 24
 	ldh [hRTCHours], a
 
+IF DEF(IGT_AS_RTC)
+	ld de, $0002 ; [$0002] = 0
+ELSE
 	ld [hl], RTC_DL
+ENDC
 	ld a, [de]
 	ldh [hRTCDayLo], a
 
+IF DEF(IGT_AS_RTC)
+	ld de, $0002 ; [$0002] = 0
+ELSE
 	ld [hl], RTC_DH
+ENDC
 	ld a, [de]
 	ldh [hRTCDayHi], a
 
@@ -220,8 +241,13 @@ SetClock::
 ; stored 'backwards' in hram
 
 	call LatchClock
+IF DEF(IGT_AS_RTC)
+	ld hl, hUnusedByte
+	ld de, hUnusedByte
+ELSE
 	ld hl, MBC3SRamBank
 	ld de, MBC3RTC
+ENDC
 
 ; seems to be a halt check that got partially commented out
 ; this block is totally pointless
