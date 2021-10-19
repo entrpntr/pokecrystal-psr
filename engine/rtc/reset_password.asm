@@ -12,13 +12,97 @@ _ResetClock::
 	ld hl, .MenuHeader
 	call CopyMenuHeader
 	call InitScrollingMenu
+.handleMenuInputLoop
 	call ScrollingMenu
 	ld b, a
 	cp B_BUTTON
 	ret z
+	cp D_RIGHT
+	jr nz, .checkLeft
+
+; handle right pressed
+	ld a, [wScrollingMenuListSize]
+	cp 6
+	jr nc, .multiplePages
+	inc a
+	ld [wMenuCursorPosition], a
+	jr .handleMenuInputLoop
+.multiplePages:
+	sub 5
+	ld b, a
+	ld a, [wMenuScrollPosition]
+	ld c, a
+	ld a, [wMenuCursorY]
+	ld d, a
+	add c
+	sub b
+	jr nc, .pastEnd
+	ld a, c
+	add 6
+	ld e, a
+	sub b
+	jr nc, .lastPage
+	ld a, d
+	ld [wMenuCursorPosition], a
+	ld a, e
+	ld [wMenuScrollPosition], a
+	jr .handleMenuInputLoop
+.pastEnd:
+	ld a, b
+	ld [wMenuScrollPosition], a
+	ld a, 6
+	ld [wMenuCursorPosition], a
+	jr .handleMenuInputLoop
+.lastPage:
+	ld a, d
+	add e
+	sub b
+	ld [wMenuCursorPosition], a
+	ld a, b
+	ld [wMenuScrollPosition], a
+	jr .handleMenuInputLoop
+; end handle right pressed
+
+.checkLeft:
+	cp D_LEFT
+	jr nz, .selected
+
+; handle left pressed
+	ld a, [wMenuScrollPosition]
+	ld b, a
+	ld a, [wMenuCursorY]
+	ld c, a
+	add b
+	ld d, a
+	cp 7
+	jr c, .beforeStart
+	ld a, b
+	cp 6
+	jr c, .firstPage
+	sub 6
+	ld [wMenuScrollPosition], a
+	ld a, c
+	ld [wMenuCursorPosition], a
+	jr .handleMenuInputLoop
+.beforeStart:
+	xor a
+	ld [wMenuScrollPosition], a
+	inc a
+	ld [wMenuCursorPosition], a
+	jr .handleMenuInputLoop
+.firstPage:
+	ld a, d
+	sub 6
+	ld [wMenuCursorPosition], a
+	xor a
+	ld [wMenuScrollPosition], a
+	jp .handleMenuInputLoop
+; end handle left pressed
+
+; handle A or select pressed on a save file
+.selected:
 	ld a, [wMenuSelection]
-	cp -1
-	ret z
+	dec a
 	push bc
 	ld b, 0
 	ld c, a
@@ -141,15 +225,15 @@ _ResetClock::
 	db 1
 
 .MenuData:
-	db SCROLLINGMENU_ENABLE_SELECT | SCROLLINGMENU_DISPLAY_ARROWS | SCROLLINGMENU_ENABLE_FUNCTION3
+	db SCROLLINGMENU_ENABLE_SELECT | SCROLLINGMENU_DISPLAY_ARROWS | SCROLLINGMENU_ENABLE_FUNCTION3 | SCROLLINGMENU_ENABLE_LEFT | SCROLLINGMENU_ENABLE_RIGHT
 	db 6, 0
 	db SCROLLINGMENU_ITEMS_NORMAL
-	dba .Numbers
-	dba .Name
+	dba Savefiles_Numbers
+	dba .PlaceSavName
 	dba NULL
-	dba .ScrollState
+	dba .UpdateScrollState
 
-.ScrollState:
+.UpdateScrollState:
 	hlcoord 18, 1
 	ld a, [wScrollingMenuListSize]
 	ld b, a
@@ -157,7 +241,7 @@ _ResetClock::
 	ld a, "/"
 	ld [hld], a
 	ld a, [wMenuSelection]
-	inc a
+	cp -1
 	jr z, .cancel
 	ld b, a
 	call .PlaceNumber
@@ -192,10 +276,9 @@ _ResetClock::
 MAX_SAVS EQU 68
 SAV_NAME_LENGTH EQU 17
 
-.Name:
+.PlaceSavName:
 	ld a, [wMenuSelection]
-	cp -1
-	ret z
+	dec a
 	push de
 	ld hl, Savefiles_Strings
 	ld bc, SAV_NAME_LENGTH
@@ -205,12 +288,12 @@ SAV_NAME_LENGTH EQU 17
 	pop hl
 	jp PlaceString
 
-; update .Numbers and Savefiles_Strings using custom tool along with .sav files
-.Numbers:
+; update Savefiles_Numbers and Savefiles_Strings using custom tool along with .sav files
+Savefiles_Numbers:
 	db 0 ; num savs
 	db -1
 for x, 1, MAX_SAVS
-	db x
+	db x + 1
 endr
 	db -1 ; end
 
