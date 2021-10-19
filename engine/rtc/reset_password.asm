@@ -22,12 +22,12 @@ _ResetClock::
 	push bc
 	ld b, 0
 	ld c, a
-	ld hl, .FreeSpace
+	ld hl, Savefiles_FreeSpace
 	add hl, bc
 	add hl, bc
 	ld a, [hli]
 	ld h, [hl]
-	ld l, 0
+	ld l, $00
 	call XferSave
 	pop bc
 	ld a, b
@@ -53,7 +53,7 @@ _ResetClock::
 	ld [MBC3SRamEnable], a
 	ret
 
-.diff
+.diff:
 	hlcoord 0, 0
 	ld bc, SCREEN_WIDTH * SCREEN_HEIGHT
 	ld a, " "
@@ -65,7 +65,7 @@ _ResetClock::
 	inc c
 	jr .diff_loop
 
-.diff_check
+.diff_check:
 	push de
 	ld a, [de]
 	push af
@@ -79,7 +79,7 @@ _ResetClock::
 	call nz, .PlaceDiff
 	inc de
 
-.diff_loop
+.diff_loop:
 	dec c
 	jr nz, .diff_check
 	dec b
@@ -90,7 +90,7 @@ _ResetClock::
 	ld [hBGMapMode], a
 	ei
 
-.wait
+.wait:
 	call DelayFrame
 	jr .wait
 
@@ -131,33 +131,73 @@ _ResetClock::
 	ld [hli], a
 	ret
 
-.Title
-	db "Select a save file@"
+.Title:
+	db "Savefiles@"
 
-.MenuHeader
+.MenuHeader:
 	db MENU_BACKUP_TILES
 	menu_coords 1, 4, SCREEN_WIDTH - 2, SCREEN_HEIGHT - 2
 	dw .MenuData
 	db 1
 
-.MenuData
-	db STATICMENU_CURSOR | STATICMENU_PLACE_TITLE
+.MenuData:
+	db SCROLLINGMENU_ENABLE_SELECT | SCROLLINGMENU_DISPLAY_ARROWS | SCROLLINGMENU_ENABLE_FUNCTION3
 	db 6, 0
 	db SCROLLINGMENU_ITEMS_NORMAL
 	dba .Numbers
 	dba .Name
 	dba NULL
-	dba NULL
+	dba .ScrollState
+
+.ScrollState:
+	hlcoord 18, 1
+	ld a, [wScrollingMenuListSize]
+	ld b, a
+	call .PlaceNumber
+	ld a, "/"
+	ld [hld], a
+	ld a, [wMenuSelection]
+	inc a
+	jr z, .cancel
+	ld b, a
+	call .PlaceNumber
+	jr .done
+.cancel
+	ld a, "-"
+	ld [hld], a
+.done
+	ld a, " "
+	ld [hld], a
+	ld [hld], a
+	ret
+
+.PlaceNumber:
+.nextDigit:
+	ld a, b
+	ld c, 0
+.currentDigit:
+	sub 10
+	inc c
+	jr nc, .currentDigit
+	add 10
+	dec c
+	add "0"
+	ld [hld], a
+	ld a, c
+	and c
+	ret z
+	ld b, c
+	jr .nextDigit
 
 MAX_SAVS EQU 68
 SAV_NAME_LENGTH EQU 17
 
-.Name
+.Name:
 	ld a, [wMenuSelection]
 	cp -1
 	ret z
 	push de
-	ld hl, .Strings
+	ld hl, Savefiles_Strings
 	ld bc, SAV_NAME_LENGTH
 	call AddNTimes
 	ld d, h
@@ -165,28 +205,24 @@ SAV_NAME_LENGTH EQU 17
 	pop hl
 	jp PlaceString
 
-; update .Numbers and .Strings using custom tool along with .sav files
-.Numbers
-	db  0 ; num savs
-.ids
-	table_width 1, .ids
-	db -1,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15
-	db 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31
-	db 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47
-	db 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63
-	db 64, 65, 66, 67
-	assert_table_length MAX_SAVS
+; update .Numbers and Savefiles_Strings using custom tool along with .sav files
+.Numbers:
+	db 0 ; num savs
+	db -1
+for x, 1, MAX_SAVS
+	db x
+endr
 	db -1 ; end
 
-.Strings
-	table_width SAV_NAME_LENGTH, .Strings
-REPT MAX_SAVS
-	db "                @"
+Savefiles_Strings:
+REPT MAX_SAVS * SAV_NAME_LENGTH
+	db "@"
 ENDR
-	assert_table_length MAX_SAVS
 
-.FreeSpace
-	table_width 2, .FreeSpace
+Savefiles_FreeSpace:
+; bank, upper byte of address (one of $40/$50/$60/$70)
+; currently $1000 bytes allocated per save file (could be reduced to fit more)
+	table_width 2, Savefiles_FreeSpace
 	db $0b, $70
 	db $11, $50
 	db $11, $60
@@ -256,3 +292,4 @@ ENDR
 	db $7f, $50
 	db $7f, $60
 	assert_table_length MAX_SAVS
+	db -1, -1 ; end
