@@ -22,7 +22,8 @@ gfx/misc.o \
 gfx/pics.o \
 gfx/sprites.o \
 gfx/tilesets.o \
-lib/mobile/main.o
+lib/mobile/main.o \
+save_loader.o
 
 pokecrystal_practice_obj         := $(rom_obj:.o=_practice.o)
 pokecrystal11_practice_obj       := $(rom_obj:.o=11_practice.o)

@@ -1,4 +1,4 @@
-BlankScreen:
+BlankScreen::
 	call DisableSpriteUpdates
 	xor a
 	ldh [hBGMapMode], a

@@ -314,6 +314,8 @@ ROMX $7d
 ROMX $7e
 	"Crystal Events"
 ROMX $7f
+	org $7000
+	"Save Loader"
 	org $7de0
 	"Stadium 2 Checksums"
 WRAM0

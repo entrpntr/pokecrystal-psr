@@ -335,7 +335,7 @@ TrainerCard_Page1_PrintStatus:
 
 TrainerCard_Page2_PrintStatus:
 	ld a, BANK("Save")
-	call OpenSRAM ; what is now OpenSRAM.valid was actually called before
+	call OpenSRAM
 	hlcoord 2, 8
 	ld de, .StatusTilemap
 	call TrainerCardSetup_PlaceTilemapString
@@ -374,7 +374,7 @@ TrainerCard_Page2_PrintStatus:
 	hlcoord 3, 15
 	ld de, .Save
 	call PlaceString
-	;call CloseSRAM
+;	call CloseSRAM
 	ret
 
 .RTC

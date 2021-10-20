@@ -1,4 +1,4 @@
-_ResetClock::
+_ResetClock:
 	farcall BlankScreen
 	ld b, SCGB_DIPLOMA
 	call GetSGBLayout
@@ -6,373 +6,250 @@ _ResetClock::
 	call LoadFontsExtra
 	ld de, MUSIC_MAIN_MENU
 	call PlayMusic
-	hlcoord 1, 1
-	ld de, .Title
-	call PlaceString
-	ld hl, .MenuHeader
+	ld hl, .PasswordAskResetClockText
+	call PrintText
+	ld hl, .NoYes_MenuHeader
 	call CopyMenuHeader
-	call InitScrollingMenu
-.handleMenuInputLoop
-	call ScrollingMenu
-	ld b, a
-	cp B_BUTTON
+	call VerticalMenu
+	ret c
+	ld a, [wMenuCursorY]
+	cp 1
 	ret z
-	cp D_RIGHT
-	jr nz, .checkLeft
-
-; handle right pressed
-	ld a, [wScrollingMenuListSize]
-	cp 6
-	jr nc, .multiplePages
-	inc a
-	ld [wMenuCursorPosition], a
-	jr .handleMenuInputLoop
-.multiplePages:
-	sub 5
-	ld b, a
-	ld a, [wMenuScrollPosition]
-	ld c, a
-	ld a, [wMenuCursorY]
-	ld d, a
-	add c
-	sub b
-	jr nc, .pastEnd
-	ld a, c
-	add 6
-	ld e, a
-	sub b
-	jr nc, .lastPage
-	ld a, d
-	ld [wMenuCursorPosition], a
-	ld a, e
-	ld [wMenuScrollPosition], a
-	jr .handleMenuInputLoop
-.pastEnd:
-	ld a, b
-	ld [wMenuScrollPosition], a
-	ld a, 6
-	ld [wMenuCursorPosition], a
-	jr .handleMenuInputLoop
-.lastPage:
-	ld a, d
-	add e
-	sub b
-	ld [wMenuCursorPosition], a
-	ld a, b
-	ld [wMenuScrollPosition], a
-	jr .handleMenuInputLoop
-; end handle right pressed
-
-.checkLeft:
-	cp D_LEFT
-	jr nz, .selected
-
-; handle left pressed
-	ld a, [wMenuScrollPosition]
-	ld b, a
-	ld a, [wMenuCursorY]
-	ld c, a
-	add b
-	ld d, a
-	cp 7
-	jr c, .beforeStart
-	ld a, b
-	cp 6
-	jr c, .firstPage
-	sub 6
-	ld [wMenuScrollPosition], a
-	ld a, c
-	ld [wMenuCursorPosition], a
-	jr .handleMenuInputLoop
-.beforeStart:
-	xor a
-	ld [wMenuScrollPosition], a
-	inc a
-	ld [wMenuCursorPosition], a
-	jr .handleMenuInputLoop
-.firstPage:
-	ld a, d
-	sub 6
-	ld [wMenuCursorPosition], a
-	xor a
-	ld [wMenuScrollPosition], a
-	jp .handleMenuInputLoop
-; end handle left pressed
-
-; handle A or select pressed on a save file
-.selected:
-	ld a, [wMenuSelection]
-	dec a
-	push bc
-	ld b, 0
-	ld c, a
-	ld hl, Savefiles_FreeSpace
-	add hl, bc
-	add hl, bc
-	ld a, [hli]
-	ld h, [hl]
-	ld l, $00
-	call XferSave
-	pop bc
-	ld a, b
-	cp SELECT
-	ld a, SRAM_ENABLE
-	ld [MBC3SRamEnable], a
-	ld a, BANK("Save")
-	ld [MBC3SRamBank], a
-	jr z, .diff
-	ld hl, $d000
-	ld de, sOptions
-	ld bc, sBox - sOptions
-	call CopyBytes
-	ld de, sCrystalData
-	ld bc, wCrystalDataEnd - wCrystalData
-	call CopyBytes
-	xor a
-	ld [MBC3SRamBank], a
-	ld de, sMysteryGiftItem
-	ld bc, sLuckyIDNumber + 2 - sMysteryGiftItem
-	call CopyBytes
-	xor a
-	ld [MBC3SRamEnable], a
+	call ClockResetPassword
+	jr c, .wrongpassword
+	ld a, BANK(sRTCStatusFlags)
+	call OpenSRAM
+	ld a, $80
+	ld [sRTCStatusFlags], a
+	call CloseSRAM
+	ld hl, .PasswordAskResetText
+	call PrintText
 	ret
 
-.diff:
-	hlcoord 0, 0
-	ld bc, SCREEN_WIDTH * SCREEN_HEIGHT
+.wrongpassword
+	ld hl, .PasswordWrongText
+	call PrintText
+	ret
+
+.PasswordAskResetText:
+	text_far _PasswordAskResetText
+	text_end
+
+.PasswordWrongText:
+	text_far _PasswordWrongText
+	text_end
+
+.PasswordAskResetClockText:
+	text_far _PasswordAskResetClockText
+	text_end
+
+.NoYes_MenuHeader:
+	db 0 ; flags
+	menu_coords 14, 7, SCREEN_WIDTH - 1, TEXTBOX_Y - 1
+	dw .NoYes_MenuData
+	db 1 ; default option
+
+.NoYes_MenuData:
+	db STATICMENU_CURSOR | STATICMENU_NO_TOP_SPACING ; flags
+	db 2 ; items
+	db "NO@"
+	db "YES@"
+
+ClockResetPassword:
+	call .CalculatePassword
+	push de
+	ld hl, wStringBuffer2
+	ld bc, 5
+	xor a
+	call ByteFill
+	ld a, 4
+	ld [wStringBuffer2 + 5], a
+	ld hl, .PasswordAskEnterText
+	call PrintText
+.loop
+	call .updateIDdisplay
+.loop2
+	call JoyTextDelay
+	ldh a, [hJoyLast]
+	ld b, a
+	and A_BUTTON
+	jr nz, .confirm
+	ld a, b
+	and D_PAD
+	jr z, .loop2
+	call .dpadinput
+	ld c, 3
+	call DelayFrames
+	jr .loop
+
+.confirm
+	call .ConvertDecIDToBytes
+	pop de
+	ld a, e
+	cp l
+	jr nz, .nope
+	ld a, d
+	cp h
+	jr nz, .nope
+	and a
+	ret
+
+.nope
+	scf
+	ret
+
+.PasswordAskEnterText:
+	text_far _PasswordAskEnterText
+	text_end
+
+.updateIDdisplay
+	hlcoord 14, 15
+	ld de, wStringBuffer2
+	ld c, 5
+.loop3
+	ld a, [de]
+	add "0"
+	ld [hli], a
+	inc de
+	dec c
+	jr nz, .loop3
+	hlcoord 14, 16
+	ld bc, 5
 	ld a, " "
 	call ByteFill
-	hlcoord 0, 0
-	ld de, $d000
-	ld bc, sBox - sOptions
-	inc b
-	inc c
-	jr .diff_loop
-
-.diff_check:
-	push de
-	ld a, [de]
-	push af
-	ld a, d
-	xor $70
-	ld d, a
-	ld a, [de]
-	pop de
-	cp d
-	pop de
-	call nz, .PlaceDiff
-	inc de
-
-.diff_loop:
-	dec c
-	jr nz, .diff_check
-	dec b
-	jr nz, .diff_check
-	xor a
-	ld [MBC3SRamEnable], a
-	inc a
-	ld [hBGMapMode], a
-	ei
-
-.wait:
-	call DelayFrame
-	jr .wait
-
-.PlaceDiff:
-	push bc
-	push af
-	ld a, d
-	xor $f0
-	call .PlaceHex
-	ld a, e
-	call .PlaceHex
-	inc hl
-	pop af
-	call .PlaceHex
-	lb bc, 0, 3
-	add hl, bc
-	pop bc
-	ld a, h
-	cp HIGH(wTilemapEnd)
-	ret nz
-	ld a, l
-	cp LOW(wTilemapEnd)
-	ret nz
-	lb bc, 1, 1
+	hlcoord 14, 16
+	ld a, [wStringBuffer2 + 5]
+	ld e, a
+	ld d, 0
+	add hl, de
+	ld [hl], "▲"
 	ret
 
-.PlaceHex:
-	ld b, a
-	swap a
-	and $f
-	add "0"
-	or "A"
-	ld [hli], a
+.dpadinput
 	ld a, b
-	and $f
-	add "0"
-	or "A"
-	ld [hli], a
-	ret
-
-.Title:
-	db "Savefiles@"
-
-.MenuHeader:
-	db MENU_BACKUP_TILES
-	menu_coords 1, 4, SCREEN_WIDTH - 2, SCREEN_HEIGHT - 2
-	dw .MenuData
-	db 1
-
-.MenuData:
-	db SCROLLINGMENU_ENABLE_SELECT | SCROLLINGMENU_DISPLAY_ARROWS | SCROLLINGMENU_ENABLE_FUNCTION3 | SCROLLINGMENU_ENABLE_LEFT | SCROLLINGMENU_ENABLE_RIGHT
-	db 6, 0
-	db SCROLLINGMENU_ITEMS_NORMAL
-	dba Savefiles_Numbers
-	dba .PlaceSavName
-	dba NULL
-	dba .UpdateScrollState
-
-.UpdateScrollState:
-	hlcoord 18, 1
-	ld a, [wScrollingMenuListSize]
-	ld b, a
-	call .PlaceNumber
-	ld a, "/"
-	ld [hld], a
-	ld a, [wMenuSelection]
-	cp -1
-	jr z, .cancel
-	ld b, a
-	call .PlaceNumber
-	jr .done
-.cancel
-	ld a, "-"
-	ld [hld], a
-.done
-	ld a, " "
-	ld [hld], a
-	ld [hld], a
-	ret
-
-.PlaceNumber:
-.nextDigit:
+	and D_LEFT
+	jr nz, .left
 	ld a, b
-	ld c, 0
-.currentDigit:
-	sub 10
-	inc c
-	jr nc, .currentDigit
-	add 10
-	dec c
-	add "0"
-	ld [hld], a
-	ld a, c
-	and c
+	and D_RIGHT
+	jr nz, .right
+	ld a, b
+	and D_UP
+	jr nz, .up
+	ld a, b
+	and D_DOWN
+	jr nz, .down
+	ret
+
+.left
+	ld a, [wStringBuffer2 + 5]
+	and a
 	ret z
-	ld b, c
-	jr .nextDigit
-
-MAX_SAVS EQU 68
-SAV_NAME_LENGTH EQU 17
-
-.PlaceSavName:
-	ld a, [wMenuSelection]
 	dec a
-	push de
-	ld hl, Savefiles_Strings
-	ld bc, SAV_NAME_LENGTH
+	ld [wStringBuffer2 + 5], a
+	ret
+
+.right
+	ld a, [wStringBuffer2 + 5]
+	cp 4
+	ret z
+	inc a
+	ld [wStringBuffer2 + 5], a
+	ret
+
+.up
+	call .getcurrentdigit
+	ld a, [hl]
+	cp 9
+	jr z, .wraparound_up
+	inc a
+	ld [hl], a
+	ret
+
+.wraparound_up
+	ld [hl], 0
+	ret
+
+.down
+	call .getcurrentdigit
+	ld a, [hl]
+	and a
+	jr z, .wraparound_down
+	dec a
+	ld [hl], a
+	ret
+
+.wraparound_down
+	ld [hl], 9
+	ret
+
+.getcurrentdigit
+	ld a, [wStringBuffer2 + 5]
+	ld e, a
+	ld d, 0
+	ld hl, wStringBuffer2
+	add hl, de
+	ret
+
+.ConvertDecIDToBytes:
+	ld hl, 0
+	ld de, wStringBuffer2 + 4
+	ld bc, 1
+	call .ConvertToBytes
+	ld bc, 10
+	call .ConvertToBytes
+	ld bc, 100
+	call .ConvertToBytes
+	ld bc, 1000
+	call .ConvertToBytes
+	ld bc, 10000
+.ConvertToBytes:
+	ld a, [de]
+	dec de
+	push hl
+	ld hl, 0
 	call AddNTimes
-	ld d, h
-	ld e, l
+	ld c, l
+	ld b, h
 	pop hl
-	jp PlaceString
+	add hl, bc
+	ret
 
-; update Savefiles_Numbers and Savefiles_Strings using custom tool along with .sav files
-Savefiles_Numbers:
-	db 0 ; num savs
-	db -1
-for x, 1, MAX_SAVS
-	db x + 1
-endr
-	db -1 ; end
+.CalculatePassword:
+	ld a, BANK(sPlayerData)
+	call OpenSRAM
+	ld de, 0
+	ld hl, sPlayerData + (wPlayerID - wPlayerData)
+	ld c, 2
+	call .ComponentFromNumber
+	ld hl, sPlayerData + (wPlayerName - wPlayerData)
+	ld c, NAME_LENGTH_JAPANESE - 1
+	call .ComponentFromString
+	ld hl, sPlayerData + (wMoney - wPlayerData)
+	ld c, 3
+	call .ComponentFromNumber
+	call CloseSRAM
+	ret
 
-Savefiles_Strings:
-REPT MAX_SAVS * SAV_NAME_LENGTH
-	db "@"
-ENDR
+.ComponentFromNumber:
+	ld a, [hli]
+	add e
+	ld e, a
+	ld a, 0
+	adc d
+	ld d, a
+	dec c
+	jr nz, .ComponentFromNumber
+	ret
 
-Savefiles_FreeSpace:
-; bank, upper byte of address (one of $40/$50/$60/$70)
-; currently $1000 bytes allocated per save file (could be reduced to fit more)
-	table_width 2, Savefiles_FreeSpace
-	db $0b, $70
-	db $11, $50
-	db $11, $60
-	db $11, $70
-	db $12, $70
-	db $20, $70
-	db $21, $70
-	db $28, $60
-	db $28, $70
-	db $29, $70
-	db $2c, $60
-	db $2c, $70
-	db $2e, $60
-	db $2e, $70
-	db $2f, $70
-	db $35, $70
-	db $36, $60
-	db $36, $70
-	db $3f, $60
-	db $3f, $70
-	db $41, $70
-	db $59, $70
-	db $5a, $70
-	db $5b, $60
-	db $5b, $70
-	db $61, $70
-	db $6b, $70
-	db $6c, $70
-	db $6e, $60
-	db $6e, $70
-	db $6f, $70
-	db $70, $60
-	db $70, $70
-	db $71, $70
-	db $72, $70
-	db $73, $60
-	db $73, $70
-	db $74, $60
-	db $74, $70
-	db $75, $40
-	db $75, $50
-	db $75, $60
-	db $75, $70
-	db $76, $40
-	db $76, $50
-	db $76, $60
-	db $76, $70
-	db $78, $50
-	db $78, $60
-	db $78, $70
-	db $79, $40
-	db $79, $50
-	db $79, $60
-	db $79, $70
-	db $7a, $40
-	db $7a, $50
-	db $7a, $60
-	db $7a, $70
-	db $7b, $50
-	db $7b, $60
-	db $7b, $70
-	db $7c, $50
-	db $7c, $60
-	db $7c, $70
-	db $7d, $70
-	db $7f, $40
-	db $7f, $50
-	db $7f, $60
-	assert_table_length MAX_SAVS
-	db -1, -1 ; end
+.ComponentFromString:
+	ld a, [hli]
+	cp "@"
+	ret z
+	add e
+	ld e, a
+	ld a, 0
+	adc d
+	ld d, a
+	dec c
+	jr nz, .ComponentFromString
+	ret
