@@ -779,41 +779,38 @@ LoadBluePage:
 
 .PlaceOTInfo:
 	ld de, TextboxesString
-	hlcoord 0, 15
+	hlcoord 0, 14
 	call PlaceString
 	lb bc, PRINTNUM_LEFTALIGN | 1, 3
-	ld de, hLog + 2
+	ld de, hLog + 1
 	ld a, [hLogCount]
 	and $1
 	jr z, .skip
 	inc de
 
 .skip
-	hlcoord 2, 16
+for y, 15, 18
+	inc de
+	hlcoord 2, y
 	call PrintNum
 	inc de
-	hlcoord 6, 16
+	hlcoord 6, y
 	call PrintNum
-	inc de
-	hlcoord 2, 17
-	call PrintNum
-	inc de
-	hlcoord 6, 17
-	call PrintNum
+endr
 	ld de, FrameString
-	hlcoord 0, 9
+	hlcoord 0, 8
 	call PlaceString
 	ld de, DVsString
-	hlcoord 0, 12
+	hlcoord 0, 11
 	call PlaceString
 	ldh a, [hContinueFrame]
 	sub 149 ; hContinueFrame=149 when frame perfect
 	ld [wContinueFrameBuffer], a
-	hlcoord 2, 10
+	hlcoord 2, 9
 	lb bc, PRINTNUM_LEFTALIGN | 1, 3
 	ld de, wContinueFrameBuffer
 	call PrintNum
-	hlcoord 2, 13
+	hlcoord 2, 12
 	ld a, [wTempMonDVs]
 	call .PlaceHex
 	ld a, [wTempMonDVs + 1]
