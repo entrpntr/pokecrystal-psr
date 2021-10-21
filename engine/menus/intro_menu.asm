@@ -1266,7 +1266,7 @@ DeleteSaveData:
 	jp Init
 
 ResetClock:
-	farcall LoadSavefileMenu
+	farcall SaveLoaderMenu
 	jp Init
 
 UpdateTitleTrailSprite: ; unreferenced

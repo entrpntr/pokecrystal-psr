@@ -1,21 +1,27 @@
 INCLUDE "constants.asm"
 
+MAX_SAVS EQU 68
+SAV_NAME_LENGTH EQU 17
 
-SECTION "Save Loader", ROMX
 
-XferSave::
+SECTION "Xfer Save", ROM0
+
+XferSave:
 	di
 	ld [MBC3RomBank], a
 	ld a, 4
 	ldh [rSVBK], a
-	ld de, $d000
+	ld de, WRAM1_Begin
 	ld bc, (sBox - sOptions) + (wCrystalDataEnd - wCrystalData) + (sLuckyIDNumber + 2 - sMysteryGiftItem)
 	call CopyBytes
-	ld a, BANK(LoadSavefileMenu)
+	ld a, BANK(SaveLoaderMenu)
 	ld [MBC3RomBank], a
 	ret
 
-LoadSavefileMenu::
+
+SECTION "Save Loader", ROMX
+
+SaveLoaderMenu::
 	farcall BlankScreen
 	ld b, SCGB_DIPLOMA
 	call GetSGBLayout
@@ -24,12 +30,12 @@ LoadSavefileMenu::
 	ld de, MUSIC_MAIN_MENU
 	call PlayMusic
 	hlcoord 1, 1
-	ld de, .Title
+	ld de, .MenuTitle
 	call PlaceString
 	ld hl, .MenuHeader
 	call CopyMenuHeader
 	call InitScrollingMenu
-.handleMenuInputLoop:
+.joypadLoop
 	call ScrollingMenu
 	ld b, a
 	cp B_BUTTON
@@ -43,8 +49,8 @@ LoadSavefileMenu::
 	jr nc, .multiplePages
 	inc a
 	ld [wMenuCursorPosition], a
-	jr .handleMenuInputLoop
-.multiplePages:
+	jr .joypadLoop
+.multiplePages
 	sub 5
 	ld b, a
 	ld a, [wMenuScrollPosition]
@@ -63,26 +69,26 @@ LoadSavefileMenu::
 	ld [wMenuCursorPosition], a
 	ld a, e
 	ld [wMenuScrollPosition], a
-	jr .handleMenuInputLoop
-.pastEnd:
+	jr .joypadLoop
+.pastEnd
 	ld a, b
 	ld [wMenuScrollPosition], a
 	ld a, 6
 	ld [wMenuCursorPosition], a
-	jr .handleMenuInputLoop
-.lastPage:
+	jr .joypadLoop
+.lastPage
 	ld a, d
 	add e
 	sub b
 	ld [wMenuCursorPosition], a
 	ld a, b
 	ld [wMenuScrollPosition], a
-	jr .handleMenuInputLoop
+	jr .joypadLoop
 ; end handle right pressed
 
-.checkLeft:
+.checkLeft
 	cp D_LEFT
-	jr nz, .selected
+	jr nz, .handleSelection
 
 ; handle left pressed
 	ld a, [wMenuScrollPosition]
@@ -100,30 +106,30 @@ LoadSavefileMenu::
 	ld [wMenuScrollPosition], a
 	ld a, c
 	ld [wMenuCursorPosition], a
-	jr .handleMenuInputLoop
-.beforeStart:
+	jr .joypadLoop
+.beforeStart
 	xor a
 	ld [wMenuScrollPosition], a
 	inc a
 	ld [wMenuCursorPosition], a
-	jr .handleMenuInputLoop
-.firstPage:
+	jr .joypadLoop
+.firstPage
 	ld a, d
 	sub 6
 	ld [wMenuCursorPosition], a
 	xor a
 	ld [wMenuScrollPosition], a
-	jp .handleMenuInputLoop
+	jp .joypadLoop
 ; end handle left pressed
 
 ; handle A or select pressed on a save file
-.selected:
+.handleSelection
 	ld a, [wMenuSelection]
 	dec a
 	push bc
 	ld b, 0
 	ld c, a
-	ld hl, Savefiles_FreeSpace
+	ld hl, .FreeSpace
 	add hl, bc
 	add hl, bc
 	ld a, [hli]
@@ -138,7 +144,7 @@ LoadSavefileMenu::
 	ld a, BANK("Save")
 	ld [MBC3SRamBank], a
 	jr z, .diff
-	ld hl, $d000
+	ld hl, WRAM1_Begin
 	ld de, sOptions
 	ld bc, sBox - sOptions
 	call CopyBytes
@@ -154,19 +160,18 @@ LoadSavefileMenu::
 	ld [MBC3SRamEnable], a
 	ret
 
-.diff:
+.diff
 	hlcoord 0, 0
 	ld bc, SCREEN_WIDTH * SCREEN_HEIGHT
 	ld a, " "
 	call ByteFill
 	hlcoord 0, 0
-	ld de, $d000
+	ld de, WRAM1_Begin
 	ld bc, sBox - sOptions
 	inc b
 	inc c
-	jr .diff_loop
-
-.diff_check:
+	jr .diffLoop
+.diffCheck
 	push de
 	ld a, [de]
 	push af
@@ -179,21 +184,37 @@ LoadSavefileMenu::
 	pop de
 	call nz, .PlaceDiff
 	inc de
-
-.diff_loop:
+.diffLoop
 	dec c
-	jr nz, .diff_check
+	jr nz, .diffCheck
 	dec b
-	jr nz, .diff_check
+	jr nz, .diffCheck
 	xor a
 	ld [MBC3SRamEnable], a
 	inc a
 	ld [hBGMapMode], a
 	ei
-
-.wait:
+.wait
 	call DelayFrame
 	jr .wait
+
+.MenuTitle:
+	db "Savefiles@"
+
+.MenuHeader:
+	db MENU_BACKUP_TILES
+	menu_coords 1, 4, SCREEN_WIDTH - 2, SCREEN_HEIGHT - 2
+	dw .MenuData
+	db 1
+
+.MenuData:
+	db SCROLLINGMENU_ENABLE_SELECT | SCROLLINGMENU_DISPLAY_ARROWS | SCROLLINGMENU_ENABLE_FUNCTION3 | SCROLLINGMENU_ENABLE_LEFT | SCROLLINGMENU_ENABLE_RIGHT
+	db 6, 0
+	db SCROLLINGMENU_ITEMS_NORMAL
+	dba .Numbers
+	dba .PlaceSavName
+	dba NULL
+	dba .UpdateScrollState
 
 .PlaceDiff:
 	push bc
@@ -232,23 +253,17 @@ LoadSavefileMenu::
 	ld [hli], a
 	ret
 
-.Title:
-	db "Savefiles@"
-
-.MenuHeader:
-	db MENU_BACKUP_TILES
-	menu_coords 1, 4, SCREEN_WIDTH - 2, SCREEN_HEIGHT - 2
-	dw .MenuData
-	db 1
-
-.MenuData:
-	db SCROLLINGMENU_ENABLE_SELECT | SCROLLINGMENU_DISPLAY_ARROWS | SCROLLINGMENU_ENABLE_FUNCTION3 | SCROLLINGMENU_ENABLE_LEFT | SCROLLINGMENU_ENABLE_RIGHT
-	db 6, 0
-	db SCROLLINGMENU_ITEMS_NORMAL
-	dba Savefiles_Numbers
-	dba .PlaceSavName
-	dba NULL
-	dba .UpdateScrollState
+.PlaceSavName:
+	ld a, [wMenuSelection]
+	dec a
+	push de
+	ld hl, .Strings
+	ld bc, SAV_NAME_LENGTH
+	call AddNTimes
+	ld d, h
+	ld e, l
+	pop hl
+	jp PlaceString
 
 .UpdateScrollState:
 	hlcoord 18, 1
@@ -273,10 +288,10 @@ LoadSavefileMenu::
 	ret
 
 .PlaceNumber:
-.nextDigit:
+.nextDigit
 	ld a, b
 	ld c, 0
-.currentDigit:
+.currentDigit
 	sub 10
 	inc c
 	jr nc, .currentDigit
@@ -290,23 +305,8 @@ LoadSavefileMenu::
 	ld b, c
 	jr .nextDigit
 
-MAX_SAVS EQU 68
-SAV_NAME_LENGTH EQU 17
-
-.PlaceSavName:
-	ld a, [wMenuSelection]
-	dec a
-	push de
-	ld hl, Savefiles_Strings
-	ld bc, SAV_NAME_LENGTH
-	call AddNTimes
-	ld d, h
-	ld e, l
-	pop hl
-	jp PlaceString
-
-; update Savefiles_Numbers and Savefiles_Strings using custom tool along with .sav files
-Savefiles_Numbers:
+; update .Numbers and .Strings using custom tool along with .sav files
+.Numbers:
 	db 0 ; num savs
 	db -1
 for x, 1, MAX_SAVS
@@ -314,15 +314,15 @@ for x, 1, MAX_SAVS
 endr
 	db -1 ; end
 
-Savefiles_Strings:
+.Strings:
 REPT MAX_SAVS * SAV_NAME_LENGTH
 	db "@"
 ENDR
 
-Savefiles_FreeSpace:
+.FreeSpace:
 ; bank, upper byte of address (one of $40/$50/$60/$70)
 ; currently $1000 bytes allocated per save file (could be reduced to fit more)
-	table_width 2, Savefiles_FreeSpace
+	table_width 2, .FreeSpace
 	db $0b, $70
 	db $11, $50
 	db $11, $60
