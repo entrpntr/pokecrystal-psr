@@ -249,6 +249,12 @@ DidntChooseStarterScript:
 
 ElmDirectionsScript:
 	turnobject PLAYER, UP
+IF DEF(PLAYBACK_COMPAT)
+	opentext
+	writetext ElmDirectionsText1
+	waitbutton
+	closetext
+ENDC
 	addcellnum PHONE_ELM
 	opentext
 	writetext GotElmsNumberText
@@ -256,6 +262,18 @@ ElmDirectionsScript:
 	waitsfx
 	waitbutton
 	closetext
+IF DEF(PLAYBACK_COMPAT)
+	turnobject ELMSLAB_ELM, LEFT
+	opentext
+	writetext ElmDirectionsText2
+	waitbutton
+	closetext
+	turnobject ELMSLAB_ELM, DOWN
+	opentext
+	writetext ElmDirectionsText3
+	waitbutton
+	closetext
+ENDC
 	setevent EVENT_GOT_A_POKEMON_FROM_ELM
 	setevent EVENT_RIVAL_CHERRYGROVE_CITY
 	setscene SCENE_ELMSLAB_AIDE_GIVES_POTION

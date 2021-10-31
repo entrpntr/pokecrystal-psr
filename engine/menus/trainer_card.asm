@@ -275,45 +275,67 @@ TrainerCard_Page1_PrintStatus:
 	ld de, .StatusTilemap
 	call TrainerCardSetup_PlaceTilemapString
 	hlcoord 2, 10
-	ld de, .RTC
+	ld de, .sRTC
 	call PlaceString
 	hlcoord 2, 11
 	ld de, .IGT
 	call PlaceString
-	ld a, $2e ; colon
-	hlcoord 12, 10
-	ld [hl], a
-	hlcoord 15, 10
-	ld [hl], a
-	hlcoord 12, 11
-	ld [hl], a
-	hlcoord 15, 11
-	ld [hl], a
-	call TrainerCard_Page1_PrintGameTime
 	hlcoord 2, 12
+	ld de, .RTC
+	call PlaceString
+	ld a, $2e ; colon
+	hlcoord 10, 10
+	ld [hl], a
+	hlcoord 13, 10
+	ld [hl], a
+	hlcoord 10, 11
+	ld [hl], a
+	hlcoord 13, 11
+	ld [hl], a
+	hlcoord 10, 12
+	ld [hl], a
+	hlcoord 13, 12
+	ld [hl], a
+; show "wStartFrame" if entered from New Game instead of Continue
+; hStartFrame will always be 0 with IGT_AS_RTC roms, 1-60 otherwise
+	ldh a, [hStartFrame]
+	and a
+	jr z, .cont
+	sub 61
+	cpl
+	ldh [hUnusedByte], a
+	ld a, $2e ; colon
+	hlcoord 16, 10
+	ld [hli], a
+	ld de, hUnusedByte
+	lb bc, PRINTNUM_LEADINGZEROS | 1, 2
+	call PrintNum
+.cont
+	call TrainerCard_Page1_PrintGameTime
+	hlcoord 2, 13
 	ld de, .Steps
 	call PlaceString
-	hlcoord 15, 12
+	hlcoord 13, 13
 	ld de, wStepCount
 	lb bc, 1, 3
 	call PrintNum
-	hlcoord 2, 13
+	hlcoord 2, 14
 	ld de, .PSN_Steps
 	call PlaceString
-	hlcoord 15, 13
+	hlcoord 13, 14
 	ld de, wPoisonStepCount
 	lb bc, 1, 3
 	call PrintNum
-	hlcoord 3, 15
+	hlcoord 3, 16
 	ld de, .Live
 	call PlaceString
-	hlcoord 14, 15
+	hlcoord 14, 16
 	ld de, .Save
 	call PlaceString
 	ret
 
-.RTC
-	db "RTC@"
+.sRTC
+	db "sRTC@"
 
 .IGT
 	db "IGT@"
@@ -323,6 +345,9 @@ TrainerCard_Page1_PrintStatus:
 
 .PSN_Steps
 	db "PSN STEPS@"
+
+.RTC
+	db "RTC@"
 
 .Live
 	db "LIVE@"
@@ -340,45 +365,45 @@ TrainerCard_Page2_PrintStatus:
 	ld de, .StatusTilemap
 	call TrainerCardSetup_PlaceTilemapString
 	hlcoord 2, 10
-	ld de, .RTC
+	ld de, .sRTC
 	call PlaceString
 	hlcoord 2, 11
 	ld de, .IGT
 	call PlaceString
 	ld a, $2e ; colon
-	hlcoord 9, 10
+	hlcoord 10, 10
 	ld [hl], a
-	hlcoord 12, 10
+	hlcoord 13, 10
 	ld [hl], a
-	hlcoord 9, 11
+	hlcoord 10, 11
 	ld [hl], a
-	hlcoord 12, 11
+	hlcoord 13, 11
 	ld [hl], a
-	hlcoord 15, 11
+	hlcoord 16, 11
 	ld [hl], a
 	call TrainerCard_Page2_PrintGameTime
-	hlcoord 2, 12
+	hlcoord 2, 13
 	ld de, .Steps
 	call PlaceString
-	hlcoord 15, 12
+	hlcoord 13, 13
 	ld de, sPlayerData + (wStepCount - wPlayerData)
 	lb bc, 1, 3
 	call PrintNum
-	hlcoord 2, 13
+	hlcoord 2, 14
 	ld de, .PSN_Steps
 	call PlaceString
-	hlcoord 15, 13
+	hlcoord 13, 14
 	ld de, sPlayerData + (wPoisonStepCount - wPlayerData)
 	lb bc, 1, 3
 	call PrintNum
-	hlcoord 3, 15
+	hlcoord 3, 16
 	ld de, .Save
 	call PlaceString
 ;	call CloseSRAM
 	ret
 
-.RTC
-	db "RTC@"
+.sRTC
+	db "sRTC@"
 
 .IGT
 	db "IGT@"
@@ -532,19 +557,19 @@ TrainerCard_Page2_3_PlaceLeadersFaces:
 	ret
 
 TrainerCard_Page1_PrintGameTime:
-	hlcoord 9, 10
-	ld de, hRTCHours
+	hlcoord 7, 10
+	ld de, wPlayerData + (wStartHour - wPlayerData)
 	lb bc, 1, 3
 	call PrintNum
 	inc hl
-	ld de, hRTCMinutes
+	ld de, wPlayerData + (wStartMinute - wPlayerData)
 	lb bc, PRINTNUM_LEADINGZEROS | 1, 2
 	call PrintNum
 	inc hl
-	ld de, hRTCSeconds
+	ld de, wPlayerData + (wStartSecond - wPlayerData)
 	lb bc, PRINTNUM_LEADINGZEROS | 1, 2
 	call PrintNum
-	hlcoord 8, 11
+	hlcoord 6, 11
 	ld de, wGameTimeHours
 	lb bc, 2, 4
 	call PrintNum
@@ -556,10 +581,22 @@ TrainerCard_Page1_PrintGameTime:
 	ld de, wGameTimeSeconds
 	lb bc, PRINTNUM_LEADINGZEROS | 1, 2
 	call PrintNum
+	hlcoord 7, 12
+	ld de, hRTCHours
+	lb bc, 1, 3
+	call PrintNum
+	inc hl
+	ld de, hRTCMinutes
+	lb bc, PRINTNUM_LEADINGZEROS | 1, 2
+	call PrintNum
+	inc hl
+	ld de, hRTCSeconds
+	lb bc, PRINTNUM_LEADINGZEROS | 1, 2
+	call PrintNum
 	ret
 
 TrainerCard_Page2_PrintGameTime:
-	hlcoord 6, 10
+	hlcoord 7, 10
 	ld de, sPlayerData + (wStartHour - wPlayerData)
 	lb bc, 1, 3
 	call PrintNum
@@ -571,7 +608,7 @@ TrainerCard_Page2_PrintGameTime:
 	ld de, sPlayerData + (wStartSecond - wPlayerData)
 	lb bc, PRINTNUM_LEADINGZEROS | 1, 2
 	call PrintNum
-	hlcoord 5, 11
+	hlcoord 6, 11
 	ld de, sPlayerData + (wGameTimeHours - wPlayerData)
 	lb bc, 2, 4
 	call PrintNum

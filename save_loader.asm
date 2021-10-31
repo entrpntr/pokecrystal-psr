@@ -151,6 +151,18 @@ SaveLoaderMenu::
 	ld de, sCrystalData
 	ld bc, wCrystalDataEnd - wCrystalData
 	call CopyBytes
+IF !DEF(IGT_AS_RTC)
+; copy IGT hours/minutes/seconds from sav into RTC
+	ld hl, hRTCDayHi
+	xor a
+	ld [hli], a
+	ld [hli], a
+	ld de, hRTCHours
+	ld hl, sPlayerData + (wGameTimeHours + 1 - wPlayerData)
+	ld bc, wGameTimeSeconds - wGameTimeHours
+	call CopyBytes
+	call SetClock
+ENDC
 	xor a
 	ld [MBC3SRamBank], a
 	ld de, sMysteryGiftItem

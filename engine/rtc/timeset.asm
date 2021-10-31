@@ -113,6 +113,25 @@ InitClock:
 
 .MinutesAreSet:
 	call InitTimeOfDay
+IF !DEF(IGT_AS_RTC) && !DEF(PLAYBACK_COMPAT)
+	ldh a, [hRTCSeconds]
+	ldh [hStartSecond], a
+	ldh a, [hVBlankCounter]
+	ldh [hUnusedByte], a
+.wait
+	call DelayFrame
+	call GetClock
+	ldh a, [hRTCSeconds]
+	ld b, a
+	ldh a, [hStartSecond]
+	cp b
+	jr z, .wait
+	ldh a, [hUnusedByte]
+	ld b, a
+	ldh a, [hVBlankCounter]
+	sub b
+	ldh [hStartFrame], a
+ENDC
 	ld hl, OakText_ResponseToSetTime
 	call PrintText
 	call WaitPressAorB_BlinkCursor

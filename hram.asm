@@ -18,9 +18,9 @@ hHours:: db
 hMinutes:: db
 	ds 1
 hSeconds:: db
-	ds 1
 
-	ds 1
+hStartSecond:: db
+hStartFrame:: db
 
 hVBlankCounter:: db
 
