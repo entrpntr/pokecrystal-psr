@@ -11,6 +11,23 @@ dsprite: MACRO
 	dbsprite \2, \4, \1, \3, \5, \6
 ENDM
 
+; macros/data.asm
+
+dbbw: MACRO
+	db \1, \2
+	dw \3
+ENDM
+
+dbww: MACRO
+	db \1
+	dw \2, \3
+ENDM
+
+dbwww: MACRO
+	db \1
+	dw \2, \3, \4
+ENDM
+
 ; macros/scripts/audio.asm
 __ EQU 0
 CC EQU 13
@@ -102,7 +119,8 @@ checknite EQUS "checktime NITE"
 
 jump           EQUS "sjump"
 farjump        EQUS "farsjump"
-priorityjump   EQUS "prioritysjump"
+priorityjump   EQUS "sdefer"
+prioritysjump  EQUS "sdefer"
 ptcall         EQUS "memcall"
 ptjump         EQUS "memjump"
 ptpriorityjump EQUS "stopandsjump"

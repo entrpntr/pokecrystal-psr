@@ -41,21 +41,6 @@ dbw: MACRO
 	dw \2
 ENDM
 
-dbbw: MACRO
-	db \1, \2
-	dw \3
-ENDM
-
-dbww: MACRO
-	db \1
-	dw \2, \3
-ENDM
-
-dbwww: MACRO
-	db \1
-	dw \2, \3, \4
-ENDM
-
 dn: MACRO ; nybbles
 rept _NARG / 2
 	db ((\1) << 4) | (\2)
@@ -113,6 +98,6 @@ sine_table: MACRO
 x = 0
 rept \1
 	dw (sin(x) + (sin(x) & $ff)) >> 8 ; round up
-x = x + DIV(32768, \1) ; a circle has 65536 "degrees"
+x += DIV(32768, \1) ; a circle has 65536 "degrees"
 endr
 ENDM

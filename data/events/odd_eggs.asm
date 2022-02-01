@@ -1,11 +1,12 @@
 NUM_ODD_EGGS EQU 14
 
 prob: MACRO
-prob_total = prob_total + (\1)
+prob_total += \1
 	dw prob_total * $ffff / 100
 ENDM
 
 OddEggProbabilities:
+; entries correspond to OddEggs (below)
 	table_width 2, OddEggProbabilities
 prob_total = 0
 ; Pichu
@@ -30,6 +31,7 @@ prob_total = 0
 	prob 10
 	prob 1
 	assert_table_length NUM_ODD_EGGS
+	assert prob_total == 100, "OddEggProbabilities do not sum to 100%!"
 
 OddEggs:
 	table_width NICKNAMED_MON_STRUCT_LENGTH, OddEggs

@@ -4,7 +4,7 @@
 	const PCPC_BEFORE_HOF     ; 1
 	const PCPC_POSTGAME       ; 2
 
-	; PokemonCenterPC.JumpTable indexes
+	; PokemonCenterPC.Jumptable indexes
 	const_def
 	const PCPCITEM_PLAYERS_PC   ; 0
 	const PCPCITEM_BILLS_PC     ; 1
@@ -30,7 +30,7 @@ PokemonCenterPC:
 	call DoNthMenu
 	jr c, .shutdown
 	ld a, [wMenuSelection]
-	ld hl, .JumpTable
+	ld hl, .Jumptable
 	call MenuJumptable
 	jr nc, .loop
 
@@ -51,9 +51,9 @@ PokemonCenterPC:
 	db 0 ; items
 	dw .WhichPC
 	dw PlaceNthMenuStrings
-	dw .JumpTable
+	dw .Jumptable
 
-.JumpTable:
+.Jumptable:
 ; entries correspond to PCPCITEM_* constants
 	dw PlayersPC,    .String_PlayersPC
 	dw BillsPC,      .String_BillsPC
@@ -136,8 +136,8 @@ PC_CheckPartyForPokemon:
 	const PLAYERSPCITEM_TOSS_ITEM     ; 2
 	const PLAYERSPCITEM_MAIL_BOX      ; 3
 	const PLAYERSPCITEM_DECORATION    ; 4
-	const PLAYERSPCITEM_TURN_OFF      ; 5
-	const PLAYERSPCITEM_LOG_OFF       ; 6
+	const PLAYERSPCITEM_LOG_OFF       ; 5
+	const PLAYERSPCITEM_TURN_OFF      ; 6
 
 BillsPC:
 	call PC_PlayChoosePCSound
@@ -298,7 +298,7 @@ PlayersPCMenuData:
 	db PLAYERSPCITEM_DEPOSIT_ITEM
 	db PLAYERSPCITEM_TOSS_ITEM
 	db PLAYERSPCITEM_MAIL_BOX
-	db PLAYERSPCITEM_TURN_OFF
+	db PLAYERSPCITEM_LOG_OFF
 	db -1 ; end
 
 	; PLAYERSPC_HOUSE
@@ -308,7 +308,7 @@ PlayersPCMenuData:
 	db PLAYERSPCITEM_TOSS_ITEM
 	db PLAYERSPCITEM_MAIL_BOX
 	db PLAYERSPCITEM_DECORATION
-	db PLAYERSPCITEM_LOG_OFF
+	db PLAYERSPCITEM_TURN_OFF
 	db -1 ; end
 
 PC_DisplayTextWaitMenu:

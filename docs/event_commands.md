@@ -156,7 +156,7 @@ Until this document is filled out, the [G/S Scripting Compendium](https://hax.ii
 ## `$2C`: <code>checkpoke <i>mon_id</i></code>
 
 
-## `$2D`: <code>givepoke <i>mon_id</i>, <i>level</i>[, <i>item</i>=0[, <i>trainer</i>=0, <i>ot_name</i>, <i>nickname</i>]]</code>
+## `$2D`: <code>givepoke <i>mon_id</i>, <i>level</i>[, <i>item</i>=0[, <i>ot_name</i>, <i>nickname</i>]]</code>
 
 
 ## `$2E`: <code>giveegg <i>mon_id</i>, <i>level</i></code>
@@ -470,7 +470,7 @@ If <code><i>item_id</i></code> = `USE_SCRIPT_VAR`, then it uses `[wScriptVar]` i
 ## `$8C`: <code>deactivatefacing <i>length</i></code>
 
 
-## `$8D`: <code>prioritysjump <i>script</i></code>
+## `$8D`: <code>sdefer <i>script</i></code>
 
 
 ## `$8E`: `warpcheck`
