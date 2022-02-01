@@ -18,6 +18,9 @@ gfx/pokemon/*/frames.asm
 *.gbc
 *.gb
 
+# ips patches
+*.ips
+
 # rgbds extras
 *.map
 *.sym
