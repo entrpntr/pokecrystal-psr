@@ -222,16 +222,24 @@ class Patch:
 baseroms = ['pokecrystal', 'pokecrystal11', 'pokecrystal_au']
 patches = ['practice', 'practice_igt']
 valid_cmds = ['create', 'apply']
+src = 'pokecrystal_au' # use AU ROM as source for creating IPS patch
+dest = 'pokecrystal' # create pokecrystal.ips (and pokecrystal_igt.ips) that work on all baseroms
 
 def create(baserom_file, patchedrom_file, ips_file):
     source_file = None
     target_file = None
+    header_data = None
     with open(baserom_file, 'rb') as f:
         source_file = f.read()
     with open(patchedrom_file, 'rb') as f:
         target_file = f.read()
+        # get header data
+        f.seek(0x134)
+        header_data = f.read(0x14e - 0x134)
 
     patch = Patch.create(source_file, target_file)
+    # force adding a record with header data
+    patch.add_record(0x134, header_data)
     with open(ips_file, 'w+b') as f:
         f.write(patch.encode())
 
@@ -257,16 +265,23 @@ if __name__ == '__main__':
     elif len(sys.argv) == 2:
         cmd = sys.argv[1]
 
-    if cmd in valid_cmds:
-        for baserom in baseroms:
-            baserom_file = f'{baserom}.gbc'
-            for patch in patches:
-                patch_name = f'{baserom}_{patch}'
-                ips_file = f'{patch_name}.ips'
-                patchedrom_file = f'{patch_name}.gbc'
+    if cmd not in valid_cmds:
+        print_error()
+
+    elif cmd == 'create':
+        baserom_file = f'{src}.gbc'
+        for patch in patches:
+            patch_name = f'{dest}_{patch}'
+            ips_file = f'{patch_name}.ips'
+            patchedrom_file = f'{patch_name}.gbc'
+            create(baserom_file, patchedrom_file, ips_file)
+
+    elif cmd == 'apply':
+        for patch in patches:
+            ips_file = f'{dest}_{patch}.ips'
+            for baserom in baseroms:
+                baserom_file = f'{baserom}.gbc'
+                # test to ensure patch files produce identical ROMs for each baserom
+                patchedrom_file = f'{baserom}_{patch}_test.gbc'
                 if cmd == 'apply':
                     apply(baserom_file, patchedrom_file, ips_file)
-                elif cmd == 'create':
-                    create(baserom_file, patchedrom_file, ips_file)
-    else:
-        print_error()

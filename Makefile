@@ -1,10 +1,6 @@
 roms := \
 pokecrystal_practice.gbc \
-pokecrystal11_practice.gbc \
-pokecrystal_au_practice.gbc \
-pokecrystal_practice_igt.gbc \
-pokecrystal11_practice_igt.gbc \
-pokecrystal_au_practice_igt.gbc
+pokecrystal_practice_igt.gbc
 
 rom_obj := \
 audio.o \
@@ -25,12 +21,8 @@ gfx/tilesets.o \
 lib/mobile/main.o \
 save_loader.o
 
-pokecrystal_practice_obj         := $(rom_obj:.o=_practice.o)
-pokecrystal11_practice_obj       := $(rom_obj:.o=11_practice.o)
-pokecrystal_au_practice_obj      := $(rom_obj:.o=_au_practice.o)
-pokecrystal_practice_igt_obj     := $(rom_obj:.o=_practice_igt.o)
-pokecrystal11_practice_igt_obj   := $(rom_obj:.o=11_practice_igt.o)
-pokecrystal_au_practice_igt_obj  := $(rom_obj:.o=_au_practice_igt.o)
+pokecrystal_practice_obj     := $(rom_obj:.o=_practice.o)
+pokecrystal_practice_igt_obj := $(rom_obj:.o=_practice_igt.o)
 
 ### Build tools
 
@@ -50,25 +42,21 @@ RGBLINK ?= $(RGBDS)rgblink
 ### Build targets
 
 .SUFFIXES:
-.PHONY: all crystal crystal11 crystal_au crystal_igt crystal11_igt crystal_au_igt clean tidy compare tools
+.PHONY: all crystal crystal_igt clean tidy compare tools
 .SECONDEXPANSION:
 .PRECIOUS:
 .SECONDARY:
 
 all: crystal
-crystal:         pokecrystal_practice.gbc
-crystal11:       pokecrystal11_practice.gbc
-crystal_au:      pokecrystal_au_practice.gbc
-crystal_igt:     pokecrystal_practice_igt.gbc
-crystal11_igt:   pokecrystal11_practice_igt.gbc
-crystal_au_igt:  pokecrystal_au_practice_igt.gbc
+crystal:     pokecrystal_practice.gbc
+crystal_igt: pokecrystal_practice_igt.gbc
 
 clean: tidy
 	find gfx \( -name "*.[12]bpp" -o -name "*.lz" -o -name "*.gbcpal" -o -name "*.sgb.tilemap" \) -delete
 	find gfx/pokemon -mindepth 1 ! -path "gfx/pokemon/unown/*" \( -name "bitmask.asm" -o -name "frames.asm" -o -name "front.animated.tilemap" -o -name "front.dimensions" \) -delete
 
 tidy:
-	rm -f $(roms) $(pokecrystal_practice_obj) $(pokecrystal11_practice_obj) $(pokecrystal_au_practice_obj) $(pokecrystal_practice_igt_obj) $(pokecrystal11_practice_igt_obj) $(pokecrystal_au_practice_igt_obj) $(roms:.gbc=.map) $(roms:.gbc=.sym) rgbdscheck.o
+	rm -f $(roms) $(pokecrystal_practice_obj) $(pokecrystal_practice_igt_obj) $(roms:.gbc=.map) $(roms:.gbc=.sym) rgbdscheck.o
 	$(MAKE) clean -C tools/
 
 compare: $(roms)
@@ -84,12 +72,8 @@ ifeq ($(DEBUG),1)
 RGBASMFLAGS += -E
 endif
 
-$(pokecrystal_practice_obj):         RGBASMFLAGS +=
-$(pokecrystal11_practice_obj):       RGBASMFLAGS += -D _CRYSTAL11
-$(pokecrystal_au_practice_obj):      RGBASMFLAGS += -D _CRYSTAL11 -D _CRYSTAL_AU
-$(pokecrystal_practice_igt_obj):     RGBASMFLAGS += -D IGT_AS_RTC
-$(pokecrystal11_practice_igt_obj):   RGBASMFLAGS += -D IGT_AS_RTC -D _CRYSTAL11
-$(pokecrystal_au_practice_igt_obj):  RGBASMFLAGS += -D IGT_AS_RTC -D _CRYSTAL11 -D _CRYSTAL_AU
+$(pokecrystal_practice_obj):     RGBASMFLAGS +=
+$(pokecrystal_practice_igt_obj): RGBASMFLAGS += -D IGT_AS_RTC
 
 rgbdscheck.o: rgbdscheck.asm
 	$(RGBASM) -o $@ $<
@@ -110,28 +94,16 @@ $(info $(shell $(MAKE) -C tools))
 
 # Dependencies for shared objects objects
 $(foreach obj, $(pokecrystal_practice_obj), $(eval $(call DEP,$(obj),$(obj:_practice.o=.asm))))
-$(foreach obj, $(pokecrystal11_practice_obj), $(eval $(call DEP,$(obj),$(obj:11_practice.o=.asm))))
-$(foreach obj, $(pokecrystal_au_practice_obj), $(eval $(call DEP,$(obj),$(obj:_au_practice.o=.asm))))
 $(foreach obj, $(pokecrystal_practice_igt_obj), $(eval $(call DEP,$(obj),$(obj:_practice_igt.o=.asm))))
-$(foreach obj, $(pokecrystal11_practice_igt_obj), $(eval $(call DEP,$(obj),$(obj:11_practice_igt.o=.asm))))
-$(foreach obj, $(pokecrystal_au_practice_igt_obj), $(eval $(call DEP,$(obj),$(obj:_au_practice_igt.o=.asm))))
 
 endif
 
 
-pokecrystal_practice_opt         = -Cjv -t PM_CRYSTAL -i BYTE -n 0 -k 01 -l 0x33 -m 0x10 -r 3 -p 0
-pokecrystal11_practice_opt       = -Cjv -t PM_CRYSTAL -i BYTE -n 1 -k 01 -l 0x33 -m 0x10 -r 3 -p 0
-pokecrystal_au_practice_opt      = -Cjv -t PM_CRYSTAL -i BYTU -n 0 -k 01 -l 0x33 -m 0x10 -r 3 -p 0
-pokecrystal_practice_igt_opt     = -Cjv -t PM_CRYSTAL -i BYTE -n 0 -k 01 -l 0x33 -m 0x10 -r 3 -p 0
-pokecrystal11_practice_igt_opt   = -Cjv -t PM_CRYSTAL -i BYTE -n 1 -k 01 -l 0x33 -m 0x10 -r 3 -p 0
-pokecrystal_au_practice_igt_opt  = -Cjv -t PM_CRYSTAL -i BYTU -n 0 -k 01 -l 0x33 -m 0x10 -r 3 -p 0
+pokecrystal_practice_opt     = -Cjv -t PM_CRYSTAL -i BYTE -n 0 -k 01 -l 0x33 -m 0x10 -r 3 -p 0
+pokecrystal_practice_igt_opt = -Cjv -t PM_CRYSTAL -i BYTE -n 0 -k 01 -l 0x33 -m 0x10 -r 3 -p 0
 
-pokecrystal_practice_base         = us
-pokecrystal11_practice_base       = us
-pokecrystal_au_practice_base      = us
-pokecrystal_practice_igt_base     = us
-pokecrystal11_practice_igt_base   = us
-pokecrystal_au_practice_igt_base  = us
+pokecrystal_practice_base     = us
+pokecrystal_practice_igt_base = us
 
 %.gbc: $$(%_obj) layout.link
 	$(RGBLINK) -n $*.sym -m $*.map -l layout.link -o $@ $(filter %.o,$^)
